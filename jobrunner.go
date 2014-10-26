@@ -11,10 +11,10 @@ import (
 type entries []*Entry
 
 // The name format string for jobs that are scheduled to run at a specific time.
-// Please avoid using names that could clash with this
+// Please avoid using names that could clash with this.
 const RunOnceJobFormat = "Run once job (#%d)"
 
-// Type for the JobRunner
+// Type for the JobRunner.
 type JobRunner struct {
 	executors        uint
 	runOnceJobNumber uint32
@@ -31,8 +31,8 @@ type JobRunner struct {
 	destroyed        bool
 }
 
-// An Entry is a type with a Schedule and a Job, along with other information regarding
-// When to run the job next, when it was previously run and whether or not it should only run once
+// An Entry is a type with a Schedule and a Job; along with other information regarding
+// when to run the job next; when it was previously run and whether or not it should only run once.
 type Entry struct {
 	Schedule Schedule
 	Next     time.Time
@@ -53,8 +53,8 @@ func (b byTime) Swap(i, j int) {
 }
 
 func (b byTime) Less(i, j int) bool {
-	// We schedule time.Zero as the last element
-	// we need this as we set the Next of the entry to time.Zero when it is still executing
+	// We schedule time.Zero as the last element.
+	// We need this as we set the Next of the entry to time.Zero when it is still executing.
 	if b[i].Next.IsZero() {
 		return false
 	}
@@ -75,15 +75,15 @@ type jobNameAndErrorChannel struct {
 	error   chan<- error
 }
 
-// Constructs a new JobRunner with support for 1 concurrent execution at a time
-// The runner must be started before it starts running jobs
+// Constructs a new JobRunner with support for 1 concurrent execution at a time.
+// The runner must be started before it starts running jobs.
 func NewRunner() *JobRunner {
 	return NewRunnerWithConcurrentExecutors(1)
 }
 
-// Constructs a new JobRunner with support for the supplied number of concurrent execution at a time
-// The runner must be started before it starts running jobs
-// Panics if 0 is provided
+// Constructs a new JobRunner with support for the supplied number of concurrent execution at a time.
+// The runner must be started before it starts running jobs.
+// Panics if 0 is provided.
 func NewRunnerWithConcurrentExecutors(concurrentExecutions uint) *JobRunner {
 	if concurrentExecutions == 0 {
 		panic("Must provide a non zero value for concurrentExecutions")
@@ -113,7 +113,7 @@ func (e entries) pos(name string) int {
 	return -1
 }
 
-// Adds a job to the JobRunner. This is a very low level API, prefer to use one of the other proxy methods
+// Adds a job to the JobRunner. This is a very low level API, prefer to use one of the other proxy methods.
 func (r *JobRunner) AddJob(name string, s Schedule, j Job, once bool) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -143,7 +143,7 @@ func (r *JobRunner) AddJob(name string, s Schedule, j Job, once bool) error {
 	}
 }
 
-// Adds a job that will run at time t - and only be run once
+// Adds a job that will run at time t - and only be run once.
 func (r *JobRunner) RunJobAt(t time.Time, j Job) error {
 	n := atomic.AddUint32(&r.runOnceJobNumber, 1)
 	name := fmt.Sprintf(RunOnceJobFormat, n)
@@ -151,7 +151,7 @@ func (r *JobRunner) RunJobAt(t time.Time, j Job) error {
 	return r.AddJob(name, scheduledAt(t), j, true)
 }
 
-// Adds a function that will run at time t - and only be run once
+// Adds a function that will run at time t - and only be run once.
 func (r *JobRunner) RunFuncAt(t time.Time, f func()) error {
 	return r.RunJobAt(t, NewFuncJob(f))
 }
@@ -204,8 +204,8 @@ func (r *JobRunner) removeEntryWithName(name string) error {
 	return nil
 }
 
-// Starts the JobRunner. This is an illegal operation if the JobRunner has been Destroyed with a call to Destroy()
-// If the JobRunner is already running, this is a no-op
+// Starts the JobRunner. This is an illegal operation if the JobRunner has been Destroyed with a call to Destroy().
+// If the JobRunner is already running, this is a no-op.
 func (r *JobRunner) Start() error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -227,7 +227,7 @@ func (r *JobRunner) Start() error {
 	return nil
 }
 
-// Returns whether or not the JobRunner is running
+// Returns whether or not the JobRunner is running.
 func (r *JobRunner) IsRunning() bool {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -250,7 +250,7 @@ func (r *JobRunner) stop() {
 	r.running = false
 }
 
-// Stops the JobRunner. Once stopped, the JobRunner can be started again
+// Stops the JobRunner. Once stopped, the JobRunner can be started again.
 func (r *JobRunner) Stop() error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -263,7 +263,7 @@ func (r *JobRunner) Stop() error {
 	return nil
 }
 
-// Destroys the JobRunner, after this is done, no further methods may be called on this instance of the JobRunner
+// Destroys the JobRunner, after this is done, no further methods may be called on this instance of the JobRunner.
 func (r *JobRunner) Destroy() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
