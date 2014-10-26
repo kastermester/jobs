@@ -1,4 +1,6 @@
 ### Job scheduler ###
+[![GoDoc](http://godoc.org/github.com/kastermester/jobs?status.png)](http://godoc.org/github.com/kastermester/jobs)
+
 This is a simple job scheduling library for go. It was greatly inspired by [robfig/cron](https://github.com/robfig/cron).
 
 However, I needed a library that could do more than simply act as a built-in cron, a more general job scheduler, with support for concurrent running jobs.
