@@ -1,8 +1,8 @@
 package jobs
 
-// A Job is the basic interface any jobs should implement.
+// Job is the basic interface any jobs should implement.
 type Job interface {
-	// Runs the job. Any kind of error handling should be taken care of inside the job.
+	// Run executes the job. Any kind of error handling should be taken care of inside the job.
 	Run()
 }
 
@@ -12,7 +12,7 @@ func (f funcJob) Run() {
 	f()
 }
 
-// Takes a function and returns a job that runs that function.
+// NewFuncJob takes a function and returns a job that runs that function.
 func NewFuncJob(f func()) Job {
 	return funcJob(f)
 }

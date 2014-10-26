@@ -14,7 +14,10 @@ type entries []*Entry
 // Please avoid using names that could clash with this.
 const RunOnceJobFormat = "Run once job (#%d)"
 
-// Type for the JobRunner.
+// JobRunner is the main type that should be used when using this package.
+// Use NewRunner (or NewRunnerWithConcurrentExecutors) to create a pointer to a JobRunner.
+// Start the runner using Start. Stop it using Stop, and don't forget to clean up the resources it uses
+// using Destroy once done with it.
 type JobRunner struct {
 	executors        uint
 	runOnceJobNumber uint32
@@ -31,7 +34,7 @@ type JobRunner struct {
 	destroyed        bool
 }
 
-// An Entry is a type with a Schedule and a Job; along with other information regarding
+// Entry is a type with a Schedule and a Job; along with other information regarding
 // when to run the job next; when it was previously run and whether or not it should only run once.
 type Entry struct {
 	Schedule Schedule
@@ -75,13 +78,13 @@ type jobNameAndErrorChannel struct {
 	error   chan<- error
 }
 
-// Constructs a new JobRunner with support for 1 concurrent execution at a time.
+// NewRunner constructs a new JobRunner with support for 1 concurrent execution at a time.
 // The runner must be started before it starts running jobs.
 func NewRunner() *JobRunner {
 	return NewRunnerWithConcurrentExecutors(1)
 }
 
-// Constructs a new JobRunner with support for the supplied number of concurrent execution at a time.
+// NewRunnerWithConcurrentExecutors constructs a new JobRunner with support for the supplied number of concurrent execution at a time.
 // The runner must be started before it starts running jobs.
 // Panics if 0 is provided.
 func NewRunnerWithConcurrentExecutors(concurrentExecutions uint) *JobRunner {
@@ -113,7 +116,7 @@ func (e entries) pos(name string) int {
 	return -1
 }
 
-// Adds a job to the JobRunner. This is a very low level API, prefer to use one of the other proxy methods.
+// AddJob adds a job to the JobRunner. This is a very low level API, prefer to use one of the other proxy methods.
 func (r *JobRunner) AddJob(name string, s Schedule, j Job, once bool) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -138,12 +141,12 @@ func (r *JobRunner) AddJob(name string, s Schedule, j Job, once bool) error {
 		r.add <- ee
 
 		return <-ch
-	} else {
-		return r.appendEntry(entry)
 	}
+
+	return r.appendEntry(entry)
 }
 
-// Adds a job that will run at time t - and only be run once.
+// RunJobAt adds a job that will run at time t - and only be run once.
 func (r *JobRunner) RunJobAt(t time.Time, j Job) error {
 	n := atomic.AddUint32(&r.runOnceJobNumber, 1)
 	name := fmt.Sprintf(RunOnceJobFormat, n)
@@ -151,12 +154,12 @@ func (r *JobRunner) RunJobAt(t time.Time, j Job) error {
 	return r.AddJob(name, scheduledAt(t), j, true)
 }
 
-// Adds a function that will run at time t - and only be run once.
+// RunFuncAt adds a function that will run at time t - and only be run once.
 func (r *JobRunner) RunFuncAt(t time.Time, f func()) error {
 	return r.RunJobAt(t, NewFuncJob(f))
 }
 
-// Removes a named job from the list - preventing it from being scheduled for further execution.
+// RemoveJob removes a named job from the list - preventing it from being scheduled for further execution.
 // However if the entry has been scheduled to run, but not yet done so - it will still complete that execution.
 func (r *JobRunner) RemoveJob(name string) error {
 	r.mutex.Lock()
@@ -175,9 +178,9 @@ func (r *JobRunner) RemoveJob(name string) error {
 
 		r.remove <- je
 		return <-ch
-	} else {
-		return r.removeEntryWithName(name)
 	}
+
+	return r.removeEntryWithName(name)
 }
 
 func (r *JobRunner) appendEntry(e *Entry) error {
@@ -204,7 +207,7 @@ func (r *JobRunner) removeEntryWithName(name string) error {
 	return nil
 }
 
-// Starts the JobRunner. This is an illegal operation if the JobRunner has been Destroyed with a call to Destroy().
+// Start starts the JobRunner. This is an illegal operation if the JobRunner has been Destroyed with a call to Destroy().
 // If the JobRunner is already running, this is a no-op.
 func (r *JobRunner) Start() error {
 	r.mutex.Lock()
@@ -227,7 +230,7 @@ func (r *JobRunner) Start() error {
 	return nil
 }
 
-// Returns whether or not the JobRunner is running.
+// IsRunning returns whether or not the JobRunner is running.
 func (r *JobRunner) IsRunning() bool {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -250,7 +253,7 @@ func (r *JobRunner) stop() {
 	r.running = false
 }
 
-// Stops the JobRunner. Once stopped, the JobRunner can be started again.
+// Stop stops the JobRunner. Once stopped, the JobRunner can be started again.
 func (r *JobRunner) Stop() error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -263,7 +266,7 @@ func (r *JobRunner) Stop() error {
 	return nil
 }
 
-// Destroys the JobRunner, after this is done, no further methods may be called on this instance of the JobRunner.
+// Destroy destroys the JobRunner, after this is done, no further methods may be called on this instance of the JobRunner.
 func (r *JobRunner) Destroy() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
