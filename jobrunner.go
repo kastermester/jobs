@@ -159,6 +159,16 @@ func (r *JobRunner) RunFuncAt(t time.Time, f func()) error {
 	return r.RunJobAt(t, NewFuncJob(f))
 }
 
+// RunNamedJobEvery adds a new job with the given name, that is scheduled to run each time the given duration has passed (implemented using the ConstantDelaySchedule).
+func (r *JobRunner) RunNamedJobEvery(name string, every time.Duration, job Job) error {
+	return r.AddJob(name, Every(every), job, false)
+}
+
+// RunNamedFuncEvery is a simple helper method for calling RunNamedJobEvery with a function instead of a job.
+func (r *JobRunner) RunNamedFuncEvery(name string, every time.Duration, f func()) error {
+	return r.AddJob(name, Every(every), NewFuncJob(f), false)
+}
+
 // RemoveJob removes a named job from the list - preventing it from being scheduled for further execution.
 // However if the entry has been scheduled to run, but not yet done so - it will still complete that execution.
 func (r *JobRunner) RemoveJob(name string) error {
