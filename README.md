@@ -25,6 +25,13 @@ func main() {
 		fmt.Println("My job was run successfully!")
 	})
 
+	// This operation will get a MUCH cleaner API soon
+	r.AddJob("My job", jobs.Every(time.Duration(time.Second)), jobs.NewFuncJob(func() {
+		fmt.Println("My job runs every second!")
+	}), false)
+
+	r.Start()
+
 	<-time.After(time.Second * 11)
 }
 ```
